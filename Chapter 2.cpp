@@ -7,6 +7,7 @@
 LPDIRECT3D9             directD3D = NULL; // Used to create the D3DDevice
 LPDIRECT3DDEVICE9       direct3Device9 = NULL; // Our rendering device
 LPDIRECT3DVERTEXBUFFER9 vertexBuffer = NULL;
+IDirect3DIndexBuffer9* IB;
 
 //-----------------------------------------------------------------------------
 // Custom vertex
@@ -80,14 +81,22 @@ HRESULT InitGeometry()
     {
         { -1.0f,-1.0f, 0.0f, 0xffffff00, },
         {  1.0f,-1.0f, 0.0f, 0xffffff00, },
-        {  0.0f, 1.0f, 0.0f, 0xffffff00, },
-        //{  0.0f, 1.0f, 0.0f, 0xffffff00, },
+        {  1.0f, 1.0f, 0.0f, 0xffffff00, },
+        { -1.0f,1.0f, 0.0f, 0xffffff00, },
     };
 
     // Create the vertex buffer.
-    if (FAILED(direct3Device9->CreateVertexBuffer(3 * sizeof(CUSTOMVERTEX),
+    if (FAILED(direct3Device9->CreateVertexBuffer(4 * sizeof(CUSTOMVERTEX),
         0, D3DFVF_CUSTOMVERTEX,
         D3DPOOL_DEFAULT, &vertexBuffer, NULL)))
+    {
+        return E_FAIL;
+    }
+
+    // Create the index buffer
+    if (FAILED(direct3Device9->CreateIndexBuffer(4 * sizeof(CUSTOMVERTEX),
+        0, D3DFMT_INDEX16,
+        D3DPOOL_DEFAULT, &IB, NULL)))
     {
         return E_FAIL;
     }
@@ -98,6 +107,16 @@ HRESULT InitGeometry()
         return E_FAIL;
     memcpy(pVertices, g_Vertices, sizeof(g_Vertices));
     vertexBuffer->Unlock();
+
+    WORD indices[] = { 0,1,2,3 };
+
+    VOID* pIndices;
+    if (FAILED(IB->Lock(0, sizeof(g_Vertices), (void**)&pIndices, 0)))
+    {
+        return E_FAIL;
+    }
+    memcpy(pIndices, indices, sizeof(indices));
+    IB->Unlock();
 
     return S_OK;
 }
@@ -178,11 +197,18 @@ VOID Render()
 
         direct3Device9->SetStreamSource(0, vertexBuffer, 0, sizeof(CUSTOMVERTEX));
         direct3Device9->SetFVF(D3DFVF_CUSTOMVERTEX);
-        direct3Device9->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, 1);
+
+        direct3Device9->SetIndices(IB);
+        direct3Device9->DrawIndexedPrimitive(D3DPT_TRIANGLEFAN, 0, 0, 4, 0, 2);
+
+
+        //DeviceSetIndex
+        //DrawIndexPrimitive
+        //direct3Device9->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
         //deseneaza puncte
         //direct3Device9->DrawPrimitive( D3DPT_POINTLIST, 0, 3 );
         //deseneaza linii
-        //direct3Device9->DrawPrimitive( D3DPT_LINESTRIP, 0, 2 );
+        //direct3Device9->DrawPrimitive( D3DPT_LINESTRIP, 0, 3 );
         // End the scene
         direct3Device9->EndScene();
     }
@@ -259,4 +285,4 @@ INT WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, INT)
     return 0;
 }
 
-//iNDEXbUFFER IN LOC DE VERTICEBUFFER TEMA
+//TODO: IndexBuffer in loc de VertexBuffer
